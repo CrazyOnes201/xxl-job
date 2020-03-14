@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
+ *
  * Created by xuxueli on 2016/3/2 21:14.
  */
 public class XxlJobExecutor  {
@@ -38,6 +39,8 @@ public class XxlJobExecutor  {
     private String accessToken;
     private String logPath;
     private int logRetentionDays;
+
+    private static final String ADDRESSES_SPLIT_FLAG = ",";
 
     public void setAdminAddresses(String adminAddresses) {
         this.adminAddresses = adminAddresses;
@@ -64,20 +67,14 @@ public class XxlJobExecutor  {
 
     // ---------------------- start + stop ----------------------
     public void start() throws Exception {
-
         // init logpath
         XxlJobFileAppender.initLogPath(logPath);
-
         // init invoker, admin-client
         initAdminBizList(adminAddresses, accessToken);
-
-
         // init JobLogFileCleanThread
         JobLogFileCleanThread.getInstance().start(logRetentionDays);
-
         // init TriggerCallbackThread
         TriggerCallbackThread.getInstance().start();
-
         // init executor-server
         port = port>0?port: NetUtil.findAvailablePort(9999);
         ip = (ip!=null&&ip.trim().length()>0)?ip: IpUtil.getIp();
@@ -109,24 +106,40 @@ public class XxlJobExecutor  {
     // ---------------------- admin-client (rpc invoker) ----------------------
     private static List<AdminBiz> adminBizList;
     private static Serializer serializer = new HessianSerializer();
+
+    /**
+     * 初始化调度中心列表。对调度中心地址字符串前后去除空格后按照ADDRESSES_SPLIT_FLAG进行分割，然后
+     * 逐个创建由调度中心地址和token组成的AdminBizClient类对象，并添加到adminBizList数组中
+     * @param adminAddresses 调度中心地址字符串，若多个地址由ADDRESSES_SPLIT_FLAG分隔
+     * @param accessToken 连接token，可不设定，用于连接调度中心时使用
+     * @throws Exception (CrazyWalker:好像没有什么异常可以抛出)
+     */
     private void initAdminBizList(String adminAddresses, String accessToken) throws Exception {
-        if (adminAddresses!=null && adminAddresses.trim().length()>0) {
-            for (String address: adminAddresses.trim().split(",")) {
-                if (address!=null && address.trim().length()>0) {
-
-                    AdminBiz adminBiz = new AdminBizClient(address.trim(), accessToken);
-
-                    if (adminBizList == null) {
-                        adminBizList = new ArrayList<AdminBiz>();
-                    }
-                    adminBizList.add(adminBiz);
+        String[] addressArray = Optional.ofNullable(adminAddresses).map(String::trim)
+                .map(s -> s.split(ADDRESSES_SPLIT_FLAG)).orElseGet(() -> new String[0]);
+        for (String address: addressArray) {
+            if (address!=null && address.trim().length()>0) {
+                AdminBiz adminBiz = new AdminBizClient(address.trim(), accessToken);
+                if (adminBizList == null) {
+                    adminBizList = new ArrayList<>();
                 }
+                adminBizList.add(adminBiz);
             }
         }
     }
+
+    /**
+     * 获取调度中心客户端类列表
+     * @return 返回调度中心客户端类列表
+     */
     public static List<AdminBiz> getAdminBizList(){
         return adminBizList;
     }
+
+    /**
+     *
+     * @return
+     */
     public static Serializer getSerializer() {
         return serializer;
     }

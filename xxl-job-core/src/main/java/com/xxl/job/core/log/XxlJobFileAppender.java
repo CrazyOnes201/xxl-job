@@ -35,6 +35,12 @@ public class XxlJobFileAppender {
 	 */
 	private static String logBasePath = "/data/applogs/xxl-job/jobhandler";
 	private static String glueSrcPath = logBasePath.concat("/gluesource");
+
+	/**
+	 * 初始化日志路径。若logPath为空字符串，则使用默认路径为日志根目录，否则使用logPath为
+	 * 日志根目录，创建目录并创建其下的glue根目录
+	 * @param logPath 日志根目录
+	 */
 	public static void initLogPath(String logPath){
 		// init
 		if (logPath!=null && logPath.trim().length()>0) {
@@ -54,9 +60,19 @@ public class XxlJobFileAppender {
 		}
 		glueSrcPath = glueBaseDir.getPath();
 	}
+
+	/**
+	 * 获取日志根目录
+	 * @return 返回日志根目录
+	 */
 	public static String getLogPath() {
 		return logBasePath;
 	}
+
+	/**
+	 * 获取glue根目录
+	 * @return 返回glue根目录
+	 */
 	public static String getGlueSrcPath() {
 		return glueSrcPath;
 	}
