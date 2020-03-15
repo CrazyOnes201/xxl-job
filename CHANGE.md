@@ -14,4 +14,11 @@
 
 - 对initAdminBizList类中的嵌套if使用Optional类进行优化
 
+
+### thread
+
+#### JobLogFileCleanThread
+
+- 对
+
 ## xxl-job-executor-samples

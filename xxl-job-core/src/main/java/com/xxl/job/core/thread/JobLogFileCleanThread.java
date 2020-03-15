@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * job file clean thread
- *
+ * 过期定时任务日志清除线程
  * @author xuxueli 2017-12-29 16:23:43
  */
 public class JobLogFileCleanThread {
@@ -100,6 +100,9 @@ public class JobLogFileCleanThread {
         localThread.start();
     }
 
+    /**
+     * 将volatile变量toStop设置为true，停止日志文件清除线程，中断线程并等待线程中断完成
+     */
     public void toStop() {
         toStop = true;
         if (localThread == null) {
