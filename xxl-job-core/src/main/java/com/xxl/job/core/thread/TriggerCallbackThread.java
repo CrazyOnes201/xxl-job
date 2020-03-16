@@ -25,6 +25,11 @@ public class TriggerCallbackThread {
     private static Logger logger = LoggerFactory.getLogger(TriggerCallbackThread.class);
 
     private static TriggerCallbackThread instance = new TriggerCallbackThread();
+
+    /**
+     * 获取回调触发器线程实例
+     * @return 返回回调触发器线程实例
+     */
     public static TriggerCallbackThread getInstance(){
         return instance;
     }
@@ -45,8 +50,7 @@ public class TriggerCallbackThread {
     private Thread triggerRetryCallbackThread;
     private volatile boolean toStop = false;
     public void start() {
-
-        // valid
+        // 验证是否配置调度中心地址 如果没有直接返回
         if (XxlJobExecutor.getAdminBizList() == null) {
             logger.warn(">>>>>>>>>>> xxl-job, executor callback config fail, adminAddresses is null.");
             return;
@@ -54,23 +58,20 @@ public class TriggerCallbackThread {
 
         // callback
         triggerCallbackThread = new Thread(new Runnable() {
-
             @Override
             public void run() {
-
                 // normal callback
                 while(!toStop){
                     try {
                         HandleCallbackParam callback = getInstance().callBackQueue.take();
                         if (callback != null) {
-
                             // callback list param
                             List<HandleCallbackParam> callbackParamList = new ArrayList<HandleCallbackParam>();
                             int drainToNum = getInstance().callBackQueue.drainTo(callbackParamList);
                             callbackParamList.add(callback);
 
                             // callback, will retry if error
-                            if (callbackParamList!=null && callbackParamList.size()>0) {
+                            if (callbackParamList.size() > 0) {
                                 doCallback(callbackParamList);
                             }
                         }
@@ -80,12 +81,11 @@ public class TriggerCallbackThread {
                         }
                     }
                 }
-
-                // last callback
+                // 停止运行后进行最后一次回调
                 try {
                     List<HandleCallbackParam> callbackParamList = new ArrayList<HandleCallbackParam>();
                     int drainToNum = getInstance().callBackQueue.drainTo(callbackParamList);
-                    if (callbackParamList!=null && callbackParamList.size()>0) {
+                    if (callbackParamList.size() > 0) {
                         doCallback(callbackParamList);
                     }
                 } catch (Exception e) {
@@ -161,7 +161,7 @@ public class TriggerCallbackThread {
     private void doCallback(List<HandleCallbackParam> callbackParamList){
         boolean callbackRet = false;
         // callback, will retry if error
-        for (AdminBiz adminBiz: XxlJobExecutor.getAdminBizList()) {
+        for (AdminBiz adminBiz : XxlJobExecutor.getAdminBizList()) {
             try {
                 ReturnT<String> callbackResult = adminBiz.callback(callbackParamList);
                 if (callbackResult!=null && ReturnT.SUCCESS_CODE == callbackResult.getCode()) {

@@ -23,9 +23,16 @@ public class ExecutorRegistryThread {
 
     private Thread registryThread;
     private volatile boolean toStop = false;
-    public void start(final String appName, final String address){
 
-        // valid
+    /**
+     * 首先验证应用名称和调度中心地址是否设置，若未设置则直接返回不启动注册线程；若设置则发送注册参数给
+     * 每一个调度中心，且每隔RegistryConfig.BEAT_TIMEOUT秒重新进行一次注册。
+     * 线程被终止后，向每个注册中心取消本执行器的注册。
+     * @param appName 应用名称
+     * @param address 执行器地址
+     */
+    public void start(final String appName, final String address){
+        // 验证是否由设置appName以及调度中心地址
         if (appName==null || appName.trim().length()==0) {
             logger.warn(">>>>>>>>>>> xxl-job, executor registry config fail, appName is null.");
             return;
@@ -38,7 +45,6 @@ public class ExecutorRegistryThread {
         registryThread = new Thread(new Runnable() {
             @Override
             public void run() {
-
                 // registry
                 while (!toStop) {
                     try {
@@ -62,7 +68,6 @@ public class ExecutorRegistryThread {
                         if (!toStop) {
                             logger.error(e.getMessage(), e);
                         }
-
                     }
 
                     try {
@@ -111,6 +116,10 @@ public class ExecutorRegistryThread {
         registryThread.start();
     }
 
+    /**
+     * 停止线程，设置volatile变量toStop为true，并调用线程中断方法，等待线程
+     * 结束后方法执行完成
+     */
     public void toStop() {
         toStop = true;
         // interrupt and wait

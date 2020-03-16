@@ -65,7 +65,7 @@ public class JobLogFileCleanThread {
                                 if (!childFile.isDirectory()) {
                                     continue;
                                 }
-                                if (childFile.getName().contains("-")) {
+                                if (!childFile.getName().contains("-")) {
                                     continue;
                                 }
 
