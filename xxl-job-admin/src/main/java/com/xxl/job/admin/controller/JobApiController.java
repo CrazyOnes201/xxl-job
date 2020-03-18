@@ -85,8 +85,7 @@ public class JobApiController {
 
 
     /**
-     * registry
-     *
+     * 执行器注册
      * @param data
      * @return
      */
