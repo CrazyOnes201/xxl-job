@@ -18,12 +18,23 @@ public class JobRegistryMonitorHelper {
 	private static Logger logger = LoggerFactory.getLogger(JobRegistryMonitorHelper.class);
 
 	private static JobRegistryMonitorHelper instance = new JobRegistryMonitorHelper();
+	private static final Character COMMA = ',';
 	public static JobRegistryMonitorHelper getInstance(){
 		return instance;
 	}
 
 	private Thread registryThread;
 	private volatile boolean toStop = false;
+
+	/**
+	 * 启动线程，并将线程设置为守护线程。
+	 * 线程获取自动注册的xxl-job单元组(包括注册中心和执行器)，若xxl-job单元组不为空，则检测
+	 * 注册表中所有失效的xxl-job单元，并移除所有失效的单元。然后获取所有未失效单元，筛选所有
+	 * 执行器，用registryKey做为key值，并将相同key值的value值组成List放入Map<String, List<String>>
+	 * 中，最后对List进行排序，使用逗号分隔将List组成为一个字符串后，更新XxlJobGroup表
+	 * @author xuxueli 2016-10-02 19:10:24
+	 * @author CrazyWalker
+	 */
 	public void start(){
 		registryThread = new Thread(new Runnable() {
 			@Override
@@ -35,21 +46,23 @@ public class JobRegistryMonitorHelper {
 						if (groupList!=null && !groupList.isEmpty()) {
 
 							// remove dead address (admin/executor)
+							// TODO 优化 不再sql中进行运算
 							List<Integer> ids = XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().findDead(RegistryConfig.DEAD_TIMEOUT, new Date());
 							if (ids!=null && ids.size()>0) {
 								XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().removeDead(ids);
 							}
 
 							// fresh online address (admin/executor)
-							HashMap<String, List<String>> appAddressMap = new HashMap<String, List<String>>();
+							HashMap<String, List<String>> appAddressMap = new HashMap<>();
+							// TODO 优化 不再sql中进行运算
 							List<XxlJobRegistry> list = XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().findAll(RegistryConfig.DEAD_TIMEOUT, new Date());
 							if (list != null) {
-								for (XxlJobRegistry item: list) {
+								for (XxlJobRegistry item : list) {
 									if (RegistryConfig.RegistType.EXECUTOR.name().equals(item.getRegistryGroup())) {
 										String appName = item.getRegistryKey();
 										List<String> registryList = appAddressMap.get(appName);
 										if (registryList == null) {
-											registryList = new ArrayList<String>();
+											registryList = new ArrayList<>();
 										}
 
 										if (!registryList.contains(item.getRegistryValue())) {
@@ -63,16 +76,19 @@ public class JobRegistryMonitorHelper {
 							// fresh group address
 							for (XxlJobGroup group: groupList) {
 								List<String> registryList = appAddressMap.get(group.getAppName());
-								String addressListStr = null;
-								if (registryList!=null && !registryList.isEmpty()) {
+								StringBuilder addressListStringBuilder = new StringBuilder();
+								if (registryList != null && !registryList.isEmpty()) {
 									Collections.sort(registryList);
-									addressListStr = "";
-									for (String item:registryList) {
-										addressListStr += item + ",";
+									boolean isFirst = true;
+									for (String item : registryList) {
+										if (!isFirst) {
+											addressListStringBuilder.append(COMMA);
+										}
+										addressListStringBuilder.append(item);
+										isFirst = false;
 									}
-									addressListStr = addressListStr.substring(0, addressListStr.length()-1);
 								}
-								group.setAddressList(addressListStr);
+								group.setAddressList(addressListStringBuilder.toString());
 								XxlJobAdminConfig.getAdminConfig().getXxlJobGroupDao().update(group);
 							}
 						}
