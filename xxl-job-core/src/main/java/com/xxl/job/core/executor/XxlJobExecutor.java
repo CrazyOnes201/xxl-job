@@ -1,18 +1,13 @@
 package com.xxl.job.core.executor;
 
 import com.xxl.job.core.biz.AdminBiz;
-import com.xxl.job.core.biz.ExecutorBiz;
 import com.xxl.job.core.biz.client.AdminBizClient;
-import com.xxl.job.core.biz.impl.ExecutorBizImpl;
 import com.xxl.job.core.handler.IJobHandler;
 import com.xxl.job.core.log.XxlJobFileAppender;
 import com.xxl.job.core.thread.ExecutorRegistryThread;
 import com.xxl.job.core.thread.JobLogFileCleanThread;
 import com.xxl.job.core.thread.JobThread;
 import com.xxl.job.core.thread.TriggerCallbackThread;
-import com.xxl.rpc.registry.ServiceRegistry;
-import com.xxl.rpc.remoting.net.impl.netty_http.server.NettyHttpServer;
-import com.xxl.rpc.remoting.provider.XxlRpcProviderFactory;
 import com.xxl.rpc.serialize.Serializer;
 import com.xxl.rpc.serialize.impl.HessianSerializer;
 import com.xxl.rpc.util.IpUtil;
@@ -82,8 +77,7 @@ public class XxlJobExecutor  {
     }
     public void destroy(){
         // destory executor-server
-        stopRpcProvider();
-
+        removeProvider();
         // destory jobThreadRepository
         if (jobThreadRepository.size() > 0) {
             for (Map.Entry<Integer, JobThread> item: jobThreadRepository.entrySet()) {
@@ -146,7 +140,6 @@ public class XxlJobExecutor  {
 
 
     // ---------------------- executor-server (rpc provider) ----------------------
-    private XxlRpcProviderFactory xxlRpcProviderFactory = null;
 
     private void initRpcProvider(String ip, int port, String appName, String accessToken) throws Exception {
 
@@ -155,66 +148,16 @@ public class XxlJobExecutor  {
         Map<String, String> serviceRegistryParam = new HashMap<String, String>();
         serviceRegistryParam.put("appName", appName);
         serviceRegistryParam.put("address", address);
-
-        xxlRpcProviderFactory = new XxlRpcProviderFactory();
-
-        xxlRpcProviderFactory.setServer(NettyHttpServer.class);
-        xxlRpcProviderFactory.setSerializer(HessianSerializer.class);
-        xxlRpcProviderFactory.setCorePoolSize(20);
-        xxlRpcProviderFactory.setMaxPoolSize(200);
-        xxlRpcProviderFactory.setIp(ip);
-        xxlRpcProviderFactory.setPort(port);
-        xxlRpcProviderFactory.setAccessToken(accessToken);
-        xxlRpcProviderFactory.setServiceRegistry(ExecutorServiceRegistry.class);
-        xxlRpcProviderFactory.setServiceRegistryParam(serviceRegistryParam);
-
-        // add services
-        xxlRpcProviderFactory.addService(ExecutorBiz.class.getName(), null, new ExecutorBizImpl());
-
-        // start
-        xxlRpcProviderFactory.start();
+        registerProvider(serviceRegistryParam);
 
     }
 
-    public static class ExecutorServiceRegistry extends ServiceRegistry {
-
-        @Override
-        public void start(Map<String, String> param) {
-            // start registry
-            ExecutorRegistryThread.getInstance().start(param.get("appName"), param.get("address"));
-        }
-        @Override
-        public void stop() {
-            // stop registry
-            ExecutorRegistryThread.getInstance().toStop();
-        }
-
-        @Override
-        public boolean registry(Set<String> keys, String value) {
-            return false;
-        }
-        @Override
-        public boolean remove(Set<String> keys, String value) {
-            return false;
-        }
-        @Override
-        public Map<String, TreeSet<String>> discovery(Set<String> keys) {
-            return null;
-        }
-        @Override
-        public TreeSet<String> discovery(String key) {
-            return null;
-        }
-
+    private void registerProvider(Map<String, String> param) {
+        ExecutorRegistryThread.getInstance().start(param.get("appName"), param.get("address"));
     }
 
-    private void stopRpcProvider() {
-        // stop provider factory
-        try {
-            xxlRpcProviderFactory.stop();
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-        }
+    private void removeProvider() {
+        ExecutorRegistryThread.getInstance().toStop();
     }
 
 

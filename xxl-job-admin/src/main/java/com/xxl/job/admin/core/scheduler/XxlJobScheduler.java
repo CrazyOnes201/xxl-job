@@ -1,5 +1,6 @@
 package com.xxl.job.admin.core.scheduler;
 
+import com.xxl.job.admin.core.biz.RestExecutorBizImpl;
 import com.xxl.job.admin.core.conf.XxlJobAdminConfig;
 import com.xxl.job.admin.core.thread.*;
 import com.xxl.job.admin.core.util.I18nUtil;
@@ -90,20 +91,10 @@ public class XxlJobScheduler  {
         }
 
         // set-cache
-        XxlRpcReferenceBean referenceBean = new XxlRpcReferenceBean();
-        referenceBean.setClient(NettyHttpClient.class);
-        referenceBean.setSerializer(HessianSerializer.class);
-        referenceBean.setCallType(CallType.SYNC);
-        referenceBean.setLoadBalance(LoadBalance.ROUND);
-        referenceBean.setIface(ExecutorBiz.class);
-        referenceBean.setVersion(null);
-        referenceBean.setTimeout(3000);
-        referenceBean.setAddress(address);
-        referenceBean.setAccessToken(XxlJobAdminConfig.getAdminConfig().getAccessToken());
-        referenceBean.setInvokeCallback(null);
-        referenceBean.setInvokerFactory(null);
+        RestExecutorBizImpl restExecutorBiz = new RestExecutorBizImpl(address,
+                XxlJobAdminConfig.getAdminConfig().getAccessToken());
 
-        executorBiz = (ExecutorBiz) referenceBean.getObject();
+        executorBiz = restExecutorBiz;
 
         executorBizRepository.put(address, executorBiz);
         return executorBiz;
