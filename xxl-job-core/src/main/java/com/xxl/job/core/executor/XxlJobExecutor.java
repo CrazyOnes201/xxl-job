@@ -27,7 +27,7 @@ public class XxlJobExecutor  {
     private static final Logger logger = LoggerFactory.getLogger(XxlJobExecutor.class);
 
     // ---------------------- param ----------------------
-    private String adminAddresses;
+    private String[] adminAddresses;
     private String appName;
     private String ip;
     private int port;
@@ -37,7 +37,7 @@ public class XxlJobExecutor  {
 
     private static final String ADDRESSES_SPLIT_FLAG = ",";
 
-    public void setAdminAddresses(String adminAddresses) {
+    public void setAdminAddresses(String[] adminAddresses) {
         this.adminAddresses = adminAddresses;
     }
     public void setAppName(String appName) {
@@ -108,10 +108,11 @@ public class XxlJobExecutor  {
      * @param accessToken 连接token，可不设定，用于连接调度中心时使用
      * @throws Exception (CrazyWalker:好像没有什么异常可以抛出)
      */
-    private void initAdminBizList(String adminAddresses, String accessToken) throws Exception {
-        String[] addressArray = Optional.ofNullable(adminAddresses).map(String::trim)
-                .map(s -> s.split(ADDRESSES_SPLIT_FLAG)).orElseGet(() -> new String[0]);
-        for (String address: addressArray) {
+    private void initAdminBizList(String[] adminAddresses, String accessToken) throws Exception {
+        if (adminAddresses == null) {
+            return;
+        }
+        for (String address: adminAddresses) {
             if (address!=null && address.trim().length()>0) {
                 AdminBiz adminBiz = new AdminBizClient(address.trim(), accessToken);
                 if (adminBizList == null) {
