@@ -21,11 +21,6 @@
 			<artifactId>xxl-rpc-core</artifactId>
 			<version>${xxl-rpc.version}</version>
 		</dependency>
-<!--		<dependency>-->
-<!--			<groupId>com.caucho</groupId>-->
-<!--			<artifactId>hessian</artifactId>-->
-<!--			<version>4.0.63</version>-->
-<!--		</dependency>-->
 
 		<!-- groovy-all -->
 		<dependency>
